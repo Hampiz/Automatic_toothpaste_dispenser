@@ -13,6 +13,7 @@ Stepper stepper(STEPS, 8, 10, 9, 11);
 const int sensorPin = 2;
 const int buzzerPin = 4;
 const int ledPin = 3;
+const int amountAdjustPin = A0;  // Potentiometer på analog ingång A0
 
 bool dispensing = false;
 bool toothbrushPresent = false;
@@ -21,6 +22,7 @@ void setup() {
     pinMode(sensorPin, INPUT);
     pinMode(buzzerPin, OUTPUT);
     pinMode(ledPin, OUTPUT);
+    pinMode(amountAdjustPin, INPUT);
 
     stepper.setSpeed(15);
     Serial.begin(9600);
@@ -42,13 +44,13 @@ void loop() {
     bool sensorTriggered = digitalRead(sensorPin) == LOW;  // Tandborste upptäckt
 
     if (sensorTriggered && !toothbrushPresent) {
-        toothbrushPresent = true;  // Markera tandborste som närvarande
+        toothbrushPresent = true;  
         Serial.println("Tandborste upptäckt, dispenserar...");
         updateDisplay("Dispenserar...");
         dispenseToothpaste();
     } 
     else if (!sensorTriggered) {
-        toothbrushPresent = false;  // Återställ när tandborsten tas bort
+        toothbrushPresent = false;
     }
 }
 
@@ -56,9 +58,14 @@ void dispenseToothpaste() {
     dispensing = true;
     digitalWrite(buzzerPin, HIGH);
     digitalWrite(ledPin, HIGH);
-    Serial.println("Trycker ut tandkräm...");
+    
+    // Läs potentiometern och mappa värdet till antal steg
+    int steps = map(analogRead(amountAdjustPin), 0, 1023, 100, 500);
+    Serial.print("Dispensing: ");
+    Serial.print(steps);
+    Serial.println(" steg");
 
-    for (int i = 0; i < 300; i++) {  // Steg för att trycka ut rätt mängd
+    for (int i = 0; i < steps; i++) {
         stepper.step(1);
     }
 
@@ -66,7 +73,7 @@ void dispenseToothpaste() {
 
     Serial.println("Drar tillbaka tryckaren...");
     
-    for (int i = 0; i < 300; i++) {  // Samma antal steg tillbaka
+    for (int i = 0; i < steps; i++) {  
         stepper.step(-1);
     }
 
