@@ -13,7 +13,7 @@ Stepper stepper(STEPS, 8, 10, 9, 11);
 const int sensorPin = 2;
 const int buzzerPin = 4;
 const int ledPin = 3;
-const int amountAdjustPin = A0;  // Potentiometer på analog ingång A0
+const int potentiometerPin = A0;
 
 bool dispensing = false;
 bool toothbrushPresent = false;
@@ -22,15 +22,10 @@ void setup() {
     pinMode(sensorPin, INPUT);
     pinMode(buzzerPin, OUTPUT);
     pinMode(ledPin, OUTPUT);
-    pinMode(amountAdjustPin, INPUT);
+    pinMode(potentiometerPin, INPUT);
 
     stepper.setSpeed(15);
     Serial.begin(9600);
-
-    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
-        Serial.println("SSD1306 initialization failed");
-        for (;;);
-    }
 
     display.clearDisplay();
     display.setTextSize(1);
@@ -45,7 +40,6 @@ void loop() {
 
     if (sensorTriggered && !toothbrushPresent) {
         toothbrushPresent = true;  
-        Serial.println("Tandborste upptäckt, dispenserar...");
         updateDisplay("Dispenserar...");
         dispenseToothpaste();
     } 
@@ -60,18 +54,13 @@ void dispenseToothpaste() {
     digitalWrite(ledPin, HIGH);
     
     // Läs potentiometern och mappa värdet till antal steg
-    int steps = map(analogRead(amountAdjustPin), 0, 1023, 100, 500);
-    Serial.print("Dispensing: ");
-    Serial.print(steps);
-    Serial.println(" steg");
+    int steps = map(analogRead(potentiometerPin), 0, 1023, 100, 500);
 
     for (int i = 0; i < steps; i++) {
         stepper.step(1);
     }
 
     delay(500);
-
-    Serial.println("Drar tillbaka tryckaren...");
     
     for (int i = 0; i < steps; i++) {  
         stepper.step(-1);
@@ -79,7 +68,6 @@ void dispenseToothpaste() {
 
     digitalWrite(buzzerPin, LOW);
     digitalWrite(ledPin, LOW);
-    Serial.println("Färdig, väntar på nästa tandborste.");
     updateDisplay("Färdig! Flytta tandborsten.");
     dispensing = false;
 }
